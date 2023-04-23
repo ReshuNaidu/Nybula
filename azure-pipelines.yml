@@ -1,0 +1,51 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+
+name: Test Automation Pipeline
+
+
+trigger:
+  - main
+
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+
+stages:
+  - stage: Run_Tests
+    displayName: Run Tests
+    jobs:
+      - job: Run_Pytest
+        displayName: Run Pytest
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.9'
+            displayName: 'Use Python 3.9'
+
+          - script: |
+              python -m venv .venv
+              .venv/bin/pip install --upgrade pip
+              .venv/bin/pip install -r requirements.txt
+              .venv/bin/pytest --html=report.html --self-contained-html tests/
+            displayName: 'Install dependencies and run tests'
+
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/TEST-*.xml'
+              searchFolder: '$(System.DefaultWorkingDirectory)/tests'
+            condition: always()
+            displayName: 'Publish Test Results'
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              artifactName: 'Test_Report'
+              targetPath: '$(Build.ArtifactStagingDirectory)/report.html'
+              publishLocation: 'pipeline'
+            condition: always()
+            displayName: 'Publish Test Report'
